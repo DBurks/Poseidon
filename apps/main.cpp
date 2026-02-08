@@ -1,39 +1,50 @@
 #include <iostream>
-#include <cstdint>
+#include <vector>
+#include <unistd.h> // For usleep
 
-// Components
+// Infrastructure
+#include "PhysicsDriver.hpp"
+#include "DepthHAL.hpp"
+#include "SonarHAL.hpp"
+#include "CAN_Transport.hpp"
+#include "Ethernet_Transport.hpp"
+
+// Domain Logic
 #include "DepthTransducer.hpp"
 #include "SonarTransducer.hpp"
 
-// Transports
-#include "CAN_Transport.hpp"           // Calls THAL::read()
-#include "Ethernet_Transport.hpp"      // Calls THAL::read()
-
-// HALs
-#include "DepthHAL.hpp"                // Provides static read() -> addr 0x01
-#include "SonarHAL.hpp"                // Provides static read() -> addr 0x12
-
-struct DummyDriver {
-    static void writeRegister(uint32_t reg, uint16_t val) {}
-    static uint16_t readRegister(uint32_t reg) {
-        if (reg == 0x01) return 500; // Depth
-        if (reg == 0x12) return 200; // Sonar
-        return 0;
-    }
-};
+// Wiring the Static Bridge
+using DepthPipe = DepthTransducer<CAN_Transport, DepthHAL<PhysicsDriver>>;
+using SonarPipe = SonarTransducer<Ethernet_Transport, SonarHAL<PhysicsDriver>>;
 
 int main() {
-    // Pipeline 1: Depth wired to CAN
-    using DepthPipe = DepthTransducer<CAN_Transport, DepthHAL<DummyDriver>>;
     DepthPipe depthSensor;
-
-    // Pipeline 2: Sonar wired to ETHERNET
-    using SonarPipe = SonarTransducer<Ethernet_Transport, SonarHAL<DummyDriver>>;
     SonarPipe sonarSensor;
 
-    std::cout << "--- Poseidon Multi-Transport Demo ---" << std::endl;
-    std::cout << "Depth (CAN): " << depthSensor.getDepthMeters() << " m" << std::endl;
-    std::cout << "Sonar (ETH): " << sonarSensor.getRangeMeters() << " m" << std::endl;
+    const int frequency_hz = 10;           // 10Hz updates
+    const int duration_seconds = 10;       // Run for 10 seconds
+    const int total_iterations = frequency_hz * duration_seconds;
+    const int sleep_microsecond = 100000;  // 100ms
 
+    std::cout << "--- Poseidon Submarine Simulation Start ---" << std::endl;
+    std::cout << "Target: 10s at 100ms intervals" << std::endl;
+
+    for (int i = 0; i < total_iterations; ++i) {
+        // 1. Update the physical world (0.1s step)
+        PhysicsDriver::updatePhysics(0.1f);
+
+        // 2. Sample the sensors
+        float d = depthSensor.getDepthMeters();
+        float a = sonarSensor.getRangeMeters();
+
+        // 3. Log data
+        std::cout << "[" << (i + 1) * 0.1 << "s] "
+                  << "Depth: " << d << "m | "
+                  << "Range: " << a << "m" << std::endl;
+
+        usleep(sleep_microsecond);
+    }
+
+    std::cout << "--- Simulation Complete ---" << std::endl;
     return 0;
 }

@@ -21,6 +21,10 @@ target_compile_definitions(transport_ethernet INTERFACE USE_ETHERNET_BUS)
 add_library(poseidon_hal INTERFACE)
 target_include_directories(poseidon_hal INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/hal)
 
+# 3.5 Drivers (Implementation Details)
+add_library(poseidon_drivers INTERFACE)
+target_include_directories(poseidon_drivers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/drivers)
+
 # 4. The Application (The "Integrator")
 add_executable(PoseidonApp apps/main.cpp)
 target_link_libraries(PoseidonApp PRIVATE 
@@ -28,4 +32,5 @@ target_link_libraries(PoseidonApp PRIVATE
     transport_can 
     transport_ethernet
     poseidon_hal
+    poseidon_drivers    # <--- Add this here
 )
