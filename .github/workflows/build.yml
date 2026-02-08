@@ -1,0 +1,26 @@
+name: Poseidon CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Build Tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++
+
+    - name: Configure CMake
+      # Explicitly setting C++11 to match your work environment
+      run: cmake -S . -B build -DCMAKE_CXX_STANDARD=11
+
+    - name: Build Project
+      run: cmake --build build
