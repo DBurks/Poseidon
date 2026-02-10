@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <unistd.h> // For usleep
+#include <string>
 
 // Infrastructure
 #include "PhysicsDriver.hpp"
@@ -16,6 +17,20 @@
 // Wiring the Static Bridge
 using DepthPipe = DepthTransducer<CAN_Transport, DepthHAL<PhysicsDriver>>;
 using SonarPipe = SonarTransducer<Ethernet_Transport, SonarHAL<PhysicsDriver>>;
+
+
+// Helper function to turn the enum into a string
+std::string statusToString(TransportStatus s) {
+    switch(s) {
+        case TransportStatus::OK:             return "OK";
+        case TransportStatus::PACKET_LOSS:    return "LOSS";
+        case TransportStatus::STALE_DATA:     return "STALE";
+        case TransportStatus::HARDWARE_ERROR: return "ERR";
+        default:                              return "UNKNOWN";
+    }
+}
+
+
 
 int main() {
     DepthPipe depthSensor;
@@ -34,13 +49,16 @@ int main() {
         PhysicsDriver::updatePhysics(0.1f);
 
         // 2. Sample the sensors
-        float d = depthSensor.getDepthMeters();
-        float a = sonarSensor.getRangeMeters();
+        auto d = depthSensor.getDepthMeters();
+        auto a = sonarSensor.getRangeMeters();
 
         // 3. Log data
         std::cout << "[" << (i + 1) * 0.1 << "s] "
-                  << "Depth: " << d << "m | "
-                  << "Range: " << a << "m" << std::endl;
+                  << "Depth: " << (d.status != TransportStatus::PACKET_LOSS ? std::to_string(d.data) : "---")
+                  << " [" << statusToString(d.status) << "] | "
+                  << "Range: " << (a.status != TransportStatus::PACKET_LOSS ? std::to_string(a.data) : "---")
+                  << " [" << statusToString(a.status) << "]" 
+                  << std::endl;
 
         usleep(sleep_microsecond);
     }

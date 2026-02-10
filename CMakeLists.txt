@@ -8,6 +8,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(poseidon_components INTERFACE)
 target_include_directories(poseidon_components INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/components)
 
+# 1.5 Transport Common (Transports)
+add_library(transport_common INTERFACE)
+target_include_directories(transport_common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/transport)
+
 # 2. Transports (Agnostic Communication)
 add_library(transport_can INTERFACE)
 target_include_directories(transport_can INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/transport/can)
@@ -31,6 +35,7 @@ target_link_libraries(PoseidonApp PRIVATE
     poseidon_components 
     transport_can 
     transport_ethernet
+    transport_common
     poseidon_hal
     poseidon_drivers    # <--- Add this here
 )
